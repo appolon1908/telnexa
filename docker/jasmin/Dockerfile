@@ -13,8 +13,8 @@ RUN test "$JASMIN_SOURCE_SHA" = "0aac58e466d583d0f0436df7b8afa3dc96191263" \
     && sed -i \
        -e 's/cryptography~=43.0.0/cryptography==50.0.1/g' \
        -e 's/pyopenssl~=24.2.0/pyopenssl==26.4.0/g' \
-       -e 's/pyasn1~=0.6.1/pyasn1==0.6.4/g' \
-       -e 's/Twisted~=23.10.0/Twisted==26.4.0rc2/g' \
+       -e 's/pyasn1~=0.6.1/pyasn1==0.6.5/g' \
+       -e 's/Twisted~=23.10.0/Twisted==26.10.0/g' \
        /build/jasmin/pyproject.toml /build/jasmin/requirements.txt
 COPY docker/jasmin/requirements.lock /build/requirements.lock
 RUN python -m venv /opt/jasmin-venv \
@@ -52,10 +52,10 @@ RUN apk add --no-cache --upgrade \
        ca-certificates-bundle=20260611-r0 \
        jemalloc=5.3.0-r6 \
        libapk=3.0.8-r0 \
-       libcrypto3=3.5.8-r0 \
+       libcrypto3=3.5.9-r0 \
        libuuid=2.42.3-r1 \
        libgcc=15.2.0-r5 \
-       libssl3=3.5.8-r0 \
+       libssl3=3.5.9-r0 \
        libstdc++=15.2.0-r5 \
        sqlite-libs=3.53.4-r0 \
     && addgroup -g 10001 -S jasmin \

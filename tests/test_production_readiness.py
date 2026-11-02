@@ -55,7 +55,7 @@ def test_nginx_runs_unprivileged_on_high_container_ports():
     http = (ROOT / "docker/nginx/http.conf.template").read_text()
     tls = (ROOT / "docker/nginx/tls.conf.template").read_text()
 
-    assert "nginxinc/nginx-unprivileged:1.30.4-alpine@sha256:" in dockerfile
+    assert "nginx/nginx-unprivileged:1.30.6-alpine3.24@sha256:" in dockerfile
     assert "USER 101:101" in dockerfile
     assert "listen 8080 default_server" in http
     assert "listen 8080 default_server" in tls

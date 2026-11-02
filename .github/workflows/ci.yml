@@ -187,6 +187,8 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Verify exact reviewed historical CI fixture
+        run: python3 scripts/ci/verify_jdbc_history_fixture.py
       - name: Gitleaks tree and PR range
         uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
         env:

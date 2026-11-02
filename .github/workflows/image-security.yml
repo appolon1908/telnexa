@@ -1,0 +1,76 @@
+name: Telnexa candidate image security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  image-security:
+    name: Candidate image security (${{ matrix.component }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [keycloak, nginx, jasmin]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Build the exact source candidate without publication
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          COMPONENT: ${{ matrix.component }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          docker build --build-arg SOURCE_COMMIT_SHA="$SOURCE_SHA" -f "docker/$COMPONENT/Dockerfile" -t "telnexa-security:$COMPONENT" .
+          image_user=$(docker image inspect "telnexa-security:$COMPONENT" --format '{{.Config.User}}')
+          test -n "$image_user"
+          case "$image_user" in root|0|0:*) exit 1 ;; esac
+      - name: Isolated image import and command compatibility
+        env:
+          COMPONENT: ${{ matrix.component }}
+        run: |
+          set -euo pipefail
+          case "$COMPONENT" in
+            keycloak)
+              docker run --rm --network none --read-only --tmpfs /tmp --entrypoint /opt/keycloak/bin/kc.sh telnexa-security:keycloak --version
+              docker run --rm --network none --read-only --tmpfs /tmp --entrypoint /opt/keycloak/bin/kcadm.sh telnexa-security:keycloak --help
+              ;;
+            nginx)
+              docker run --rm --network none --read-only --tmpfs /tmp --entrypoint nginx telnexa-security:nginx -v
+              ;;
+            jasmin)
+              docker run --rm --network none --read-only --tmpfs /tmp -v "$PWD/docker/jasmin/test_dependency_compatibility.py:/tmp/test_dependency_compatibility.py:ro" --entrypoint /opt/jasmin-venv/bin/python telnexa-security:jasmin /tmp/test_dependency_compatibility.py
+              ;;
+            *) exit 1 ;;
+          esac
+      - name: Disposable PostgreSQL realm and original configuration compatibility
+        if: matrix.component == 'keycloak'
+        run: bash scripts/ci/keycloak-candidate-compatibility.sh
+      - name: Scan the complete candidate image with the original release severity
+        env:
+          COMPONENT: ${{ matrix.component }}
+          TRIVY_IMAGE: aquasec/trivy@sha256:e2b22eac59c02003d8749f5b8d9bd073b62e30fefaef5b7c8371204e0a4b0c08
+        run: |
+          set -euo pipefail
+          docker save "telnexa-security:$COMPONENT" -o "$RUNNER_TEMP/candidate-image.tar"
+          docker run --rm -v "$RUNNER_TEMP/candidate-image.tar:/candidate-image.tar:ro" "$TRIVY_IMAGE" image --input /candidate-image.tar --scanners vuln,secret --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL
+  gate:
+    name: telnexa/image-security
+    needs: [image-security]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Require every candidate image to pass
+        env:
+          IMAGE_SECURITY_RESULT: ${{ needs.image-security.result }}
+        run: test "$IMAGE_SECURITY_RESULT" = success
