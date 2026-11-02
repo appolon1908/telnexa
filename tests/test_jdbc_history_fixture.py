@@ -91,3 +91,31 @@ def test_wrong_repository_id_is_rejected_before_git(monkeypatch):
         with pytest.raises(ValueError):
             VERIFIER.main()
         git.assert_not_called()
+
+
+def test_immutable_object_fetch_does_not_narrow_history_or_change_refs(monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "appolon1908/telnexa")
+    monkeypatch.setenv("GITHUB_REPOSITORY_ID", "1334764612")
+    results = [
+        subprocess.CompletedProcess([], 0, stdout=b""),
+        subprocess.CompletedProcess([], 0, stdout=original_fixture()),
+    ]
+    with patch.object(VERIFIER.subprocess, "run", side_effect=results) as git:
+        VERIFIER.main()
+    assert git.call_args_list[0].args[0] == [
+        "git",
+        "fetch",
+        "--no-tags",
+        "--no-write-fetch-head",
+        "--no-recurse-submodules",
+        "https://github.com/appolon1908/telnexa.git",
+        VERIFIER.COMMIT,
+    ]
+    assert git.call_args_list[1].args[0] == [
+        "git",
+        "show",
+        f"{VERIFIER.COMMIT}:{VERIFIER.SOURCE_PATH}",
+    ]
+    assert all(
+        call.kwargs == {"check": True, "capture_output": True} for call in git.call_args_list
+    )

@@ -100,6 +100,7 @@ jobs:
         run: |
           docker build --build-arg SOURCE_COMMIT_SHA="$SOURCE_SHA" -f billing/Dockerfile -t telnexa-ci:${GITHUB_SHA} .
           test "$(docker image inspect telnexa-ci:${GITHUB_SHA} --format '{{.Config.User}}')" != "root"
+          docker run --rm -v "$PWD:/src:ro" -w /src --entrypoint pytest telnexa-ci:${GITHUB_SHA} -q
 
   merge-result-quality-and-tests:
     name: Exact merge-result quality and tests
@@ -177,6 +178,7 @@ jobs:
         run: |
           docker build --build-arg SOURCE_COMMIT_SHA="$SOURCE_SHA" -f billing/Dockerfile -t telnexa-merge-ci:${GITHUB_SHA} .
           test "$(docker image inspect telnexa-merge-ci:${GITHUB_SHA} --format '{{.Config.User}}')" != "root"
+          docker run --rm -v "$PWD:/src:ro" -w /src --entrypoint pytest telnexa-merge-ci:${GITHUB_SHA} -q
 
   secret-scan:
     name: Secret scan
