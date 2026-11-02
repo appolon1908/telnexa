@@ -37,7 +37,7 @@ def test_actual_inherited_account_guard_fails_closed(tmp_path, mutation):
         path.write_text("isolated immutable account fixture\n")
         path.chmod(0o640)
     capture, guard = commands(tmp_path)
-    subprocess.run(["bash", "-c", capture], check=True)
+    subprocess.run(["sh", "-c", capture], check=True)
     if mutation == "bytes":
         (etc / "passwd").write_text("modified account fixture\n")
     elif mutation == "mode":
@@ -49,5 +49,5 @@ def test_actual_inherited_account_guard_fails_closed(tmp_path, mutation):
     elif mutation == "symlink":
         (etc / "passwd").unlink()
         (etc / "passwd").symlink_to(etc / "group")
-    result = subprocess.run(["bash", "-c", guard], capture_output=True)
+    result = subprocess.run(["sh", "-c", guard], capture_output=True)
     assert (result.returncode == 0) is (mutation == "unchanged")
