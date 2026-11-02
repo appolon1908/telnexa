@@ -1,0 +1,73 @@
+{
+  "purpose": "Source-only candidate image security repair; no deployment or production migration authorization",
+  "source_base": "d97622e081cf674b017d30d69231d34a9a222282",
+  "keycloak": {
+    "image": "quay.io/keycloak/keycloak:26.7.5@sha256:37dbaf6f0722c9ec246335f36e1ef8b2e6cb960f7c27e0d8c615121a3d475a85",
+    "amd64_manifest": "sha256:6529db34610ce6328824218dce3bbe55c4ba4757bc5c8a09b5a4c746e28b6e9d",
+    "release": "https://www.keycloak.org/2026/09/keycloak-2675-released",
+    "migration_review": "https://www.keycloak.org/docs/26.7.5/upgrading/",
+    "scope": "No custom OrganizationProvider, client-updater-source-groups or Authorization Services resource policy in tracked source. Preserve realm/profile/client configuration, admin CLI, PostgreSQL mode and non-root user. Production database migration compatibility remains separately required.",
+    "fixed_libraries": [
+      "opt/keycloak/bin/client/keycloak-admin-cli-26.7.5.jar",
+      "opt/keycloak/bin/client/lib/bcprov-jdk18on-1.86.jar",
+      "opt/keycloak/lib/lib/main/com.fasterxml.jackson.core.jackson-core-2.21.7.jar",
+      "opt/keycloak/lib/lib/main/com.fasterxml.jackson.core.jackson-databind-2.21.7.jar",
+      "opt/keycloak/lib/lib/main/com.google.guava.guava-33.5.0-jre.jar",
+      "opt/keycloak/lib/lib/main/io.netty.netty-codec-http-4.1.138.Final.jar",
+      "opt/keycloak/lib/lib/main/io.netty.netty-codec-http2-4.1.138.Final.jar",
+      "opt/keycloak/lib/lib/main/io.netty.netty-handler-4.1.138.Final.jar",
+      "opt/keycloak/lib/lib/main/io.netty.netty-handler-proxy-4.1.138.Final.jar",
+      "opt/keycloak/lib/lib/main/org.bouncycastle.bcprov-jdk18on-1.86.jar",
+      "opt/keycloak/lib/lib/main/org.freemarker.freemarker-2.3.35.jar"
+    ],
+    "admin_cli_jackson_properties": {
+      "path": "opt/keycloak/bin/client/keycloak-admin-cli-26.7.5.jar",
+      "sha256": "de198806d9147df48c9e85db44d71ce3917bf82d18b19c5e2652b54705a86e23",
+      "properties": [
+        [
+          "META-INF/maven/com.fasterxml.jackson.core/jackson-core/pom.properties",
+          "artifactId=jackson-core\ngroupId=com.fasterxml.jackson.core\nversion=2.21.7\n"
+        ],
+        [
+          "META-INF/maven/com.fasterxml.jackson.core/jackson-databind/pom.properties",
+          "artifactId=jackson-databind\ngroupId=com.fasterxml.jackson.core\nversion=2.21.7\n"
+        ],
+        [
+          "META-INF/maven/com.fasterxml.jackson.datatype/jackson-datatype-jdk8/pom.properties",
+          "version=2.21.7\ngroupId=com.fasterxml.jackson.datatype\nartifactId=jackson-datatype-jdk8\n"
+        ],
+        [
+          "META-INF/maven/com.fasterxml.jackson.datatype/jackson-datatype-jsr310/pom.properties",
+          "version=2.21.7\ngroupId=com.fasterxml.jackson.datatype\nartifactId=jackson-datatype-jsr310\n"
+        ],
+        [
+          "META-INF/maven/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/pom.properties",
+          "artifactId=jackson-dataformat-yaml\ngroupId=com.fasterxml.jackson.dataformat\nversion=2.21.7\n"
+        ]
+      ]
+    },
+    "guava": {
+      "version": "33.7.2-jre",
+      "sha256": "b530942257fb935f8b2cfaa5f8eb5bd59c555fd8e8d01b8ce98912e077ea606c",
+      "release": "https://github.com/google/guava/releases/tag/v33.7.2",
+      "reason": "CVE-2026-102554; retain original augmented path, verify fixed artifact bytes"
+    }
+  },
+  "nginx": {
+    "image": "nginx/nginx-unprivileged:1.30.6-alpine3.24@sha256:44e74ca483234093081138b6d7b6f561d55557756a2deefc3a5056148defeb99",
+    "maintainer_namespace_change": "https://github.com/nginx/docker-nginx-unprivileged/blob/main/README.md",
+    "security_release": "https://nginx.org/news.html",
+    "reason": "CVE-2026-15176, CVE-2026-93479, CVE-2026-97205; same stable series, preserve user101/templates/high ports"
+  },
+  "jasmin": {
+    "app_source_unchanged": "0aac58e466d583d0f0436df7b8afa3dc96191263",
+    "base_unchanged": "sha256:d09d15e60962ca365d1cd544a48773bac9d33f2fb1b00f2aa0deec78ade7dc31",
+    "signed_repository_exact_updates": {
+      "libcrypto3": "3.5.8-r0 -> 3.5.9-r0",
+      "libssl3": "3.5.8-r0 -> 3.5.9-r0"
+    },
+    "reason": "Original exact versions no longer available in signed Alpine repository; preserve trust keys, all other pins, locked Python dependencies and durability patch",
+    "package_source": "https://pkgs.alpinelinux.org/package/v3.22/main/x86_64/libssl3"
+  },
+  "validation": "Fresh full source and merge-result CI plus three image builds, isolated network-disabled CLI/import checks, original pinned Trivy scanner HIGH/CRITICAL vulnerability and secret scans required; no scan ignore added."
+}

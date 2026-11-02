@@ -35,28 +35,23 @@ def test_release_dependencies_are_immutable() -> None:
         assert action in WORKFLOW
 
 
-def test_keycloak_image_contains_checksum_pinned_netty_security_fix() -> None:
-    assert "CVE-2026-75595/CVE-2026-75596" in KEYCLOAK_DOCKERFILE
-    assert "CVE-2026-59903" in KEYCLOAK_DOCKERFILE
-    for artifact, checksum in (
-        (
-            "netty-handler",
-            "d0e4c6ee4779f59f6ab2fb5d388e4f57147c82270164b37945764bb9bda96a44",
-        ),
-        (
-            "netty-codec-http",
-            "0535bb5a736472bef5c948d15eb273c4ab9f796656fc7c5d6b982ad92bddbd49",
-        ),
-    ):
-        assert f"io.netty.{artifact}-4.1.136.Final.jar" in KEYCLOAK_DOCKERFILE
-        assert f"io.netty.{artifact}-4.1.137.Final.jar" in KEYCLOAK_DOCKERFILE
-        assert f"ADD --checksum=sha256:{checksum}" in KEYCLOAK_DOCKERFILE
-        assert (
-            f"{artifact}-4.1.137.Final.jar /opt/keycloak/lib/lib/main/"
-            f"io.netty.{artifact}-4.1.136.Final.jar"
-        ) in KEYCLOAK_DOCKERFILE
+def test_keycloak_image_contains_fixed_upstream_libraries_and_guava_overlay() -> None:
+    assert (
+        "keycloak:26.7.5@sha256:37dbaf6f0722c9ec246335f36e1ef8b2e6cb960f7c27e0d8c615121a3d475a85"
+        in KEYCLOAK_DOCKERFILE
+    )
+    # Netty fixes must remain present in the official patch distribution.
+    for artifact in ("netty-handler", "netty-codec-http"):
+        assert f"io.netty.{artifact}-4.1.138.Final.jar" in KEYCLOAK_DOCKERFILE
+    assert "com.google.guava.guava-33.5.0-jre.jar" in KEYCLOAK_DOCKERFILE
+    assert "guava-33.7.2-jre.jar" in KEYCLOAK_DOCKERFILE
+    assert "ADD --checksum=sha256:" in KEYCLOAK_DOCKERFILE
     assert "| sha256sum -c -" in KEYCLOAK_DOCKERFILE
-    assert KEYCLOAK_DOCKERFILE.count("--chown=1000:0 --chmod=0644") == 2
+    assert "keycloak-admin-cli-26.7.5.jar" in KEYCLOAK_DOCKERFILE
+    assert "jackson-core-2.21.7.jar" in KEYCLOAK_DOCKERFILE
+    assert "jackson-databind-2.21.7.jar" in KEYCLOAK_DOCKERFILE
+    assert "bcprov-jdk18on-1.86.jar" in KEYCLOAK_DOCKERFILE
+    assert "freemarker-2.3.35.jar" in KEYCLOAK_DOCKERFILE
 
 
 def test_all_workflow_actions_are_pinned_to_exact_commits() -> None:

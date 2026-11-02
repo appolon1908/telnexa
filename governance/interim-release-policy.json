@@ -18,6 +18,11 @@
       "context": "Secret scan",
       "integration_id": 15368,
       "workflow": ".github/workflows/ci.yml"
+    },
+    {
+      "context": "telnexa/image-security",
+      "integration_id": 15368,
+      "workflow": ".github/workflows/image-security.yml"
     }
   ],
   "replaces_contexts": [
