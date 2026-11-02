@@ -5,9 +5,9 @@ sqlalchemy==2.0.43
 psycopg[binary]==3.2.9
 pydantic-settings==2.10.1
 passlib[argon2]==1.7.4
-PyJWT[crypto]==2.13.0
+PyJWT[crypto]==2.14.0
 python-multipart==0.0.32
-msgpack==1.2.1
+msgpack==1.2.3
 jinja2==3.1.6
 reportlab==4.4.3
 prometheus-client==0.22.1
