@@ -45,6 +45,22 @@ def main() -> None:
         "1334764612",
     ):
         raise ValueError("unreviewed repository identity")
+    # Squash merges need not retain the PR commit in main's ancestry. Fetch
+    # only its immutable reviewed object without changing HEAD, refs, FETCH_HEAD
+    # or shallow boundaries; scan ancestry and source identity remain unchanged.
+    subprocess.run(
+        [
+            "git",
+            "fetch",
+            "--no-tags",
+            "--no-write-fetch-head",
+            "--no-recurse-submodules",
+            "https://github.com/appolon1908/telnexa.git",
+            COMMIT,
+        ],
+        check=True,
+        capture_output=True,
+    )
     source = subprocess.run(
         ["git", "show", f"{COMMIT}:{SOURCE_PATH}"], check=True, capture_output=True
     ).stdout
