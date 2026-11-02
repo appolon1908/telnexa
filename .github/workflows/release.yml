@@ -52,7 +52,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          test "$GITHUB_REPOSITORY" = 'appolon1908-hue/telnexa'
+          test "$GITHUB_REPOSITORY" = 'appolon1908/telnexa'
+          test "$GITHUB_REPOSITORY_ID" = '1334764612'
           test "$GITHUB_REF" = 'refs/heads/main'
           test "$GITHUB_REF_PROTECTED" = 'true'
           test "$GITHUB_EVENT_NAME" = 'push' -o "$GITHUB_EVENT_NAME" = 'workflow_dispatch'
@@ -180,7 +181,7 @@ jobs:
         if: steps.final_tag.outputs.exists != 'true'
         env:
           CANDIDATE_DIGEST: ${{ steps.build.outputs.digest }}
-          SIGNING_IDENTITY: https://github.com/appolon1908-hue/telnexa/.github/workflows/release.yml@refs/heads/main
+          SIGNING_IDENTITY: https://github.com/appolon1908/telnexa/.github/workflows/release.yml@refs/heads/main
           OIDC_ISSUER: https://token.actions.githubusercontent.com
         run: |
           set -Eeuo pipefail
@@ -196,7 +197,7 @@ jobs:
         if: steps.final_tag.outputs.exists != 'true'
         env:
           CANDIDATE_DIGEST: ${{ steps.build.outputs.digest }}
-          SIGNING_IDENTITY: https://github.com/appolon1908-hue/telnexa/.github/workflows/release.yml@refs/heads/main
+          SIGNING_IDENTITY: https://github.com/appolon1908/telnexa/.github/workflows/release.yml@refs/heads/main
           OIDC_ISSUER: https://token.actions.githubusercontent.com
         run: |
           set -Eeuo pipefail
@@ -222,7 +223,7 @@ jobs:
       - name: Independently verify signing identity and archive verified predicates
         env:
           CANDIDATE_DIGEST: ${{ steps.build.outputs.digest }}
-          SIGNING_IDENTITY: https://github.com/appolon1908-hue/telnexa/.github/workflows/release.yml@refs/heads/main
+          SIGNING_IDENTITY: https://github.com/appolon1908/telnexa/.github/workflows/release.yml@refs/heads/main
           OIDC_ISSUER: https://token.actions.githubusercontent.com
         run: |
           set -Eeuo pipefail
