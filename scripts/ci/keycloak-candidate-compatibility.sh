@@ -20,20 +20,20 @@ chmod 0644 "$secret_dir/admin-password"
 postgres=postgres:17.6-alpine@sha256:d5f196a551b5cef1c70853c6dd588f456d16ca4ea733e3f31c75bc1ae2f65f3f
 docker pull "$postgres"
 docker network create --internal "$network"
-docker run -d --name "$database" --network "$network" --network-alias keycloak-db \
+docker run -d --name "$database" --network "$network" --network-alias db \
   --tmpfs /var/lib/postgresql/data \
-  -e POSTGRES_DB=keycloak -e POSTGRES_USER=keycloak -e POSTGRES_PASSWORD="$password" "$postgres"
+  -e POSTGRES_DB=ci -e POSTGRES_USER=ci -e POSTGRES_PASSWORD="$password" "$postgres"
 ready=false
 for attempt in $(seq 1 60); do
-  if docker exec "$database" pg_isready -U keycloak -d keycloak >/dev/null 2>&1; then ready=true; break; fi
+  if docker exec "$database" pg_isready -U ci -d ci >/dev/null 2>&1; then ready=true; break; fi
   sleep 2
 done
 test "$ready" = true
 docker run -d --name "$server" --network "$network" --network-alias keycloak \
   --cap-drop ALL --security-opt no-new-privileges:true \
   -e KC_BOOTSTRAP_ADMIN_USERNAME=telnexa-bootstrap -e KC_BOOTSTRAP_ADMIN_PASSWORD="$password" \
-  -e KC_DB=postgres -e KC_DB_URL=jdbc:postgresql://keycloak-db:5432/keycloak \
-  -e KC_DB_USERNAME=keycloak -e KC_DB_PASSWORD="$password" \
+  -e KC_DB=postgres -e KC_DB_URL=jdbc:postgresql://db:5432/ci \
+  -e KC_DB_USERNAME=ci -e KC_DB_PASSWORD="$password" \
   -e KC_HTTP_ENABLED=true -e KC_HOSTNAME=http://keycloak:8080/auth \
   -v "$PWD/config/keycloak/telnexa-realm.json:/opt/keycloak/data/import/telnexa-realm.json:ro" \
   telnexa-security:keycloak start --optimized --import-realm

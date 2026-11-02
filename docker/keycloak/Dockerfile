@@ -33,9 +33,14 @@ RUN rpm --root /mnt/rootfs -qa --qf '%{NAME} %{EPOCHNUM}:%{VERSION}-%{RELEASE}\n
        pcre2-10.40-7.el9_8 pcre2-syntax-10.40-7.el9_8 \
     && rpm --root /mnt/rootfs -qa --qf '%{NAME} %{EPOCHNUM}:%{VERSION}-%{RELEASE}\n' > /tmp/rpm-after.txt \
     && test -s /tmp/rpm-after.txt && sort -o /tmp/rpm-after.txt /tmp/rpm-after.txt \
-    && (diff -U 0 /tmp/rpm-before.txt /tmp/rpm-after.txt > /tmp/rpm-changes.txt || test "$?" -eq 1) \
-    && awk '/^[+-][^+-]/ { if ($1 !~ /^[+-](ca-certificates|java-21-openjdk-headless|pcre2|pcre2-syntax)$/) exit 1 }' /tmp/rpm-changes.txt \
-    && test "$(grep -Ec '^[+-][^+-]' /tmp/rpm-changes.txt)" -eq 8 \
+    && cat /tmp/rpm-before.txt /tmp/rpm-after.txt \
+    && rpm --root /mnt/rootfs -qa --qf 'RPM_DEPENDENCY_GRAPH %{NAME} %{EPOCHNUM}:%{VERSION}-%{RELEASE}.%{ARCH}\n[%{REQUIRENAME} %{REQUIREFLAGS:depflags} %{REQUIREVERSION}\n]END_RPM_DEPENDENCY_GRAPH\n' \
+    && comm -3 /tmp/rpm-before.txt /tmp/rpm-after.txt > /tmp/rpm-changes.txt \
+    && while read -r package version; do \
+       case "$package" in ca-certificates|java-21-openjdk-headless|pcre2|pcre2-syntax) : ;; \
+       *) printf 'Unreviewed native package delta: %s\n' "$package" >&2; exit 1 ;; esac; \
+       done < /tmp/rpm-changes.txt \
+    && test "$(wc -l < /tmp/rpm-changes.txt)" -eq 8 \
     && cat /tmp/rpm-changes.txt \
     && mkdir -p /mnt/rootfs/usr/share/telnexa \
     && cp /tmp/rpm-before.txt /mnt/rootfs/usr/share/telnexa/rpm-before.txt \
