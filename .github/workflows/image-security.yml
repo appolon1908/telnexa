@@ -47,10 +47,13 @@ jobs:
               docker run --rm --network none --read-only --tmpfs /tmp --entrypoint nginx telnexa-security:nginx -v
               ;;
             jasmin)
-              docker run --rm --network none --read-only --tmpfs /tmp --entrypoint /opt/jasmin-venv/bin/python telnexa-security:jasmin -c 'import jasmin, twisted, OpenSSL, cryptography; print("Jasmin security dependency imports passed")'
+              docker run --rm --network none --read-only --tmpfs /tmp -v "$PWD/docker/jasmin/test_dependency_compatibility.py:/tmp/test_dependency_compatibility.py:ro" --entrypoint /opt/jasmin-venv/bin/python telnexa-security:jasmin /tmp/test_dependency_compatibility.py
               ;;
             *) exit 1 ;;
           esac
+      - name: Disposable PostgreSQL realm and original configuration compatibility
+        if: matrix.component == 'keycloak'
+        run: bash scripts/ci/keycloak-candidate-compatibility.sh
       - name: Scan the complete candidate image with the original release severity
         env:
           COMPONENT: ${{ matrix.component }}

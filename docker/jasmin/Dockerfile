@@ -13,8 +13,8 @@ RUN test "$JASMIN_SOURCE_SHA" = "0aac58e466d583d0f0436df7b8afa3dc96191263" \
     && sed -i \
        -e 's/cryptography~=43.0.0/cryptography==50.0.1/g' \
        -e 's/pyopenssl~=24.2.0/pyopenssl==26.4.0/g' \
-       -e 's/pyasn1~=0.6.1/pyasn1==0.6.4/g' \
-       -e 's/Twisted~=23.10.0/Twisted==26.4.0rc2/g' \
+       -e 's/pyasn1~=0.6.1/pyasn1==0.6.5/g' \
+       -e 's/Twisted~=23.10.0/Twisted==26.10.0/g' \
        /build/jasmin/pyproject.toml /build/jasmin/requirements.txt
 COPY docker/jasmin/requirements.lock /build/requirements.lock
 RUN python -m venv /opt/jasmin-venv \
