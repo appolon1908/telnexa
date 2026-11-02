@@ -176,6 +176,7 @@ def test_protected_source_secret_scan_uses_exact_reviewed_allowlist() -> None:
     assert '--log-opts="$SOURCE_SHA" /repo' in WORKFLOW
     fingerprints = {line for line in GITLEAKS_IGNORE.splitlines() if line}
     assert fingerprints == {
+        "152585aa5525f1182d56ed939ac0729c9095d12f:scripts/ci/keycloak-candidate-compatibility.sh:generic-api-key:35",
         "515b29481dd638f227eadc611c0a7dc2b92acbdd:.github/workflows/step4-format-artifact.yml:generic-api-key:28",
         "67ec59e447bb73334f1edb7042e937977cf2ec8e:labs/middleware_telnexa/certify.py:generic-api-key:72",
         "4b4e5c73463df1c03723438d97bffd9b73393b95:docker-compose.yml:generic-api-key:45",

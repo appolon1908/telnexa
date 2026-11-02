@@ -17,12 +17,24 @@ COPY --from=guava-security-fix --chown=1000:0 --chmod=0644 /guava-33.7.2-jre.jar
 USER 1000
 
 # Use the original root filesystem and signed UBI repositories to update only
-# the four vulnerable native packages. The builder's own filesystem is never
+# the four vulnerable native packages and their required Java timezone update. The builder's own filesystem is never
 # copied into the candidate; a scratch final stage also removes obsolete files.
 FROM ${KEYCLOAK_BASE_IMAGE} AS native-source
 FROM redhat/ubi9:9.8@sha256:8f989cc9270da6abec0144c22846ed1e6e92e462dc7768ce0981c4ac1d574733 AS native-security-fix
+RUN dnf --setopt=gpgcheck=True install -y findutils diffutils && dnf clean all
 COPY --from=native-source / /mnt/rootfs/
-RUN rpm --root /mnt/rootfs -qa --qf '%{NAME} %{EPOCHNUM}:%{VERSION}-%{RELEASE}\n' > /tmp/rpm-before.txt \
+COPY docker/keycloak/curate-native-rootfs.sh /tmp/curate-native-rootfs.sh
+COPY docker/keycloak/expected-native-rpms.txt /tmp/expected-native-rpms.txt
+RUN set -eu; \
+    mkdir /tmp/inherited-accounts; \
+    for account in passwd group shadow gshadow nsswitch.conf; do \
+      if test -e "/mnt/rootfs/etc/$account" || test -L "/mnt/rootfs/etc/$account"; then \
+        test -f "/mnt/rootfs/etc/$account"; test ! -L "/mnt/rootfs/etc/$account"; \
+        cp -p "/mnt/rootfs/etc/$account" "/tmp/inherited-accounts/$account"; \
+        stat -c '%a:%u:%g:%F' "/mnt/rootfs/etc/$account" > "/tmp/inherited-accounts/$account.metadata"; \
+      else touch "/tmp/inherited-accounts/$account.absent"; fi; \
+    done; \
+    rpm --root /mnt/rootfs -qa --qf '%{NAME} %{EPOCHNUM}:%{VERSION}-%{RELEASE}.%{ARCH}\n' > /tmp/rpm-before.txt \
     && test -s /tmp/rpm-before.txt && sort -o /tmp/rpm-before.txt /tmp/rpm-before.txt \
     && dnf -y --installroot /mnt/rootfs --releasever 9 \
        --setopt=install_weak_deps=False --setopt=tsflags=nodocs \
@@ -31,16 +43,33 @@ RUN rpm --root /mnt/rootfs -qa --qf '%{NAME} %{EPOCHNUM}:%{VERSION}-%{RELEASE}\n
        ca-certificates-2026.2.92_v9.0.319-90.3.el9_8 \
        java-21-openjdk-headless-21.0.13.0.9-1.2.el9 \
        pcre2-10.40-7.el9_8 pcre2-syntax-10.40-7.el9_8 \
-    && rpm --root /mnt/rootfs -qa --qf '%{NAME} %{EPOCHNUM}:%{VERSION}-%{RELEASE}\n' > /tmp/rpm-after.txt \
+       tzdata-java-2026e-1.el9_8 \
+    && rpm --root /mnt/rootfs -qa --qf '%{NAME} %{EPOCHNUM}:%{VERSION}-%{RELEASE}.%{ARCH}\n' > /tmp/rpm-after.txt \
     && test -s /tmp/rpm-after.txt && sort -o /tmp/rpm-after.txt /tmp/rpm-after.txt \
-    && cat /tmp/rpm-before.txt /tmp/rpm-after.txt \
-    && rpm --root /mnt/rootfs -qa --qf 'RPM_DEPENDENCY_GRAPH %{NAME} %{EPOCHNUM}:%{VERSION}-%{RELEASE}.%{ARCH}\n[%{REQUIRENAME} %{REQUIREFLAGS:depflags} %{REQUIREVERSION}\n]END_RPM_DEPENDENCY_GRAPH\n' \
+    && chroot /mnt/rootfs /usr/bin/update-ca-trust extract \
+    && bash /tmp/curate-native-rootfs.sh java-21-openjdk-headless glibc-langpack-en findutils \
+    && for account in passwd group shadow gshadow nsswitch.conf; do \
+      if test -e "/tmp/inherited-accounts/$account.absent"; then \
+        { test ! -e "/mnt/rootfs/etc/$account" && test ! -L "/mnt/rootfs/etc/$account"; } || exit 1; \
+      else \
+        { test -f "/mnt/rootfs/etc/$account" && test ! -L "/mnt/rootfs/etc/$account" \
+          && cmp -s "/tmp/inherited-accounts/$account" "/mnt/rootfs/etc/$account" \
+          && stat -c '%a:%u:%g:%F' "/mnt/rootfs/etc/$account" > /tmp/account.metadata \
+          && cmp -s "/tmp/inherited-accounts/$account.metadata" /tmp/account.metadata; } || exit 1; \
+      fi; \
+    done \
+    && rpm --root /mnt/rootfs -qa --qf '%{NAME} %{EPOCHNUM}:%{VERSION}-%{RELEASE}.%{ARCH}\n' > /tmp/rpm-after.txt \
+    && test -s /tmp/rpm-after.txt && sort -o /tmp/rpm-after.txt /tmp/rpm-after.txt \
     && comm -3 /tmp/rpm-before.txt /tmp/rpm-after.txt > /tmp/rpm-changes.txt \
     && while read -r package version; do \
-       case "$package" in ca-certificates|java-21-openjdk-headless|pcre2|pcre2-syntax) : ;; \
+       case "$package" in ca-certificates|java-21-openjdk-headless|pcre2|pcre2-syntax|tzdata-java) : ;; \
        *) printf 'Unreviewed native package delta: %s\n' "$package" >&2; exit 1 ;; esac; \
        done < /tmp/rpm-changes.txt \
-    && test "$(wc -l < /tmp/rpm-changes.txt)" -eq 8 \
+    && test "$(wc -l < /tmp/rpm-changes.txt)" -eq 10 \
+    && cmp -s /tmp/rpm-after.txt /tmp/expected-native-rpms.txt \
+    && rpm --root /mnt/rootfs -V --noconfig --nomtime \
+       ca-certificates java-21-openjdk-headless pcre2 pcre2-syntax tzdata-java \
+    && test -z "$(find /mnt/rootfs/usr/lib/jvm -name '*21.0.12*' -print -quit)" \
     && cat /tmp/rpm-changes.txt \
     && mkdir -p /mnt/rootfs/usr/share/telnexa \
     && cp /tmp/rpm-before.txt /mnt/rootfs/usr/share/telnexa/rpm-before.txt \
