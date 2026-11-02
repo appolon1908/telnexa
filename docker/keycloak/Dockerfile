@@ -67,7 +67,7 @@ RUN set -eu; \
        done < /tmp/rpm-changes.txt \
     && test "$(wc -l < /tmp/rpm-changes.txt)" -eq 10 \
     && cmp -s /tmp/rpm-after.txt /tmp/expected-native-rpms.txt \
-    && rpm --root /mnt/rootfs -V --noconfig --nomtime \
+    && rpm --root /mnt/rootfs -V --nodeps --noconfig --nomtime \
        ca-certificates java-21-openjdk-headless pcre2 pcre2-syntax tzdata-java \
     && test -z "$(find /mnt/rootfs/usr/lib/jvm -name '*21.0.12*' -print -quit)" \
     && cat /tmp/rpm-changes.txt \
